@@ -1,0 +1,36 @@
+React SplitPanel
+================
+
+Usage
+-----
+
+### JSX
+
+    <SplitPanel direction="horizontal">
+        <div>
+            <p>First component here</p>
+        </div>
+        <div>
+            <p>Second component here</p>
+        </div>
+    </SplitPanel>
+
+### Styling
+
+Look at dist/splitPanel.less, there are a couple of variables but it's short so
+do whatever you want.
+
+Just remember to give the panel a height if you're going with a horizontal
+layout.
+
+On the Horizon
+--------------
+At some point I'll update this to support more than two sub-panels but right
+now it does everything I need.
+
+Contributing
+------------
+Submit a pull request. I'll take a look at your code and if I like it I'll
+merge it. If not I'll either ignore you or tell you what to do to make me like
+your code. Such is life.
+
