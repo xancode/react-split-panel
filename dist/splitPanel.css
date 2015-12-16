@@ -1,0 +1,27 @@
+.splitPanel {
+  white-space: nowrap;
+}
+.splitPanel .splitPanelItem {
+  overflow: hidden;
+}
+.splitPanel .splitPanelDivider {
+  background: #333;
+}
+.splitPanel.horizontal .splitPanelDivider,
+.splitPanel.horizontal .splitPanelItem {
+  display: inline-block;
+}
+.splitPanel.horizontal .splitPanelDivider {
+  cursor: ew-resize;
+  width: 5px;
+  height: 100%;
+}
+.splitPanel.vertical .splitPanelDivider,
+.splitPanel.vertical .splitPanelItem {
+  display: block;
+}
+.splitPanel.vertical .splitPanelDivider {
+  cursor: ns-resize;
+  width: 100%;
+  height: 5px;
+}
