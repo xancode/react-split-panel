@@ -1,0 +1,39 @@
+@splitPanelDividerBackground: #333;
+@splitPanelDividerSize: 5px;
+
+.splitPanel {
+    white-space: nowrap;
+
+    .splitPanelItem {
+        overflow: hidden;
+    }
+
+    .splitPanelDivider {
+        background: @splitPanelDividerBackground;
+    }
+
+    &.horizontal {
+        .splitPanelDivider, .splitPanelItem {
+            display: inline-block;
+        }
+        
+        .splitPanelDivider {
+            cursor: ew-resize;
+            width: @splitPanelDividerSize;
+            height: 100%;
+        }
+    }
+
+    &.vertical {
+        .splitPanelDivider, .splitPanelItem {
+            display: block;
+        }
+
+        .splitPanelDivider {
+            cursor: ns-resize;
+            width: 100%;
+            height: @splitPanelDividerSize;
+        }
+    }
+}
+

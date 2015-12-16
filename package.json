@@ -1,0 +1,33 @@
+{
+  "name": "react-split-panel",
+  "version": "1.0.0",
+  "description": "A split panel component for React.",
+  "main": "./dist/SplitPanel.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oheard/react-split-panel.git"
+  },
+  "keywords": [
+    "react",
+    "panel",
+    "split-panel",
+    "split",
+    "pane",
+    "split-pane"
+  ],
+  "author": "Oliver Heard <oliver@oheard.info>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/oheard/react-split-panel/issues"
+  },
+  "homepage": "https://github.com/oheard/react-split-panel#readme",
+  "devDependencies": {
+    "babel-plugin-transform-class-properties": "^6.3.13",
+    "babel-preset-es2015": "^6.3.13",
+    "babel-preset-react": "^6.3.13",
+    "gulp": "^3.9.0",
+    "gulp-babel": "^6.1.1",
+    "gulp-less": "^3.0.5",
+    "react": "^0.14.3"
+  }
+}
