@@ -1,6 +1,6 @@
 {
   "name": "react-split-panel",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A split panel component for React.",
   "main": "./dist/SplitPanel.js",
   "repository": {
