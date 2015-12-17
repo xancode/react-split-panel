@@ -10,6 +10,10 @@ var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
+var _classnames = require('classnames');
+
+var _classnames2 = _interopRequireDefault(_classnames);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
@@ -77,8 +81,6 @@ var SplitPanel = (function (_React$Component) {
       window.addEventListener('mousemove', this.onMouseMove);
 
       var totalSize = this.refs.self[this.domSizeProperty];
-      console.log(totalSize);
-      console.log(this.dividerSize);
       this.setState({
         dividerPos: totalSize / 2,
         firstSize: totalSize / 2 - this.dividerSize / 2,
@@ -97,9 +99,12 @@ var SplitPanel = (function (_React$Component) {
       var firstStyle = _defineProperty({}, this.cssSizeProperty, this.state.firstSize);
       var lastStyle = _defineProperty({}, this.cssSizeProperty, this.state.lastSize);
 
+      var klass = (0, _classnames2.default)("splitPanel", this.props.direction, {
+        'splitPanelResizing': this.state.dragging
+      });
       return _react2.default.createElement(
         'div',
-        { ref: 'self', className: 'splitPanel ' + this.props.direction },
+        { ref: 'self', className: klass },
         _react2.default.createElement(
           'div',
           { className: 'splitPanelItem', style: firstStyle },

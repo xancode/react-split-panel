@@ -1,4 +1,5 @@
 import React from 'react';
+import classNames from 'classnames';
 
 export default class SplitPanel extends React.Component {
   static propTypes = {
@@ -78,8 +79,6 @@ export default class SplitPanel extends React.Component {
     window.addEventListener('mousemove', this.onMouseMove);
 
     const totalSize = this.refs.self[this.domSizeProperty];
-    console.log(totalSize);
-    console.log(this.dividerSize);
     this.setState({
       dividerPos: totalSize / 2,
       firstSize: totalSize / 2 - this.dividerSize / 2,
@@ -96,7 +95,10 @@ export default class SplitPanel extends React.Component {
     const firstStyle = { [this.cssSizeProperty]: this.state.firstSize };
     const lastStyle = { [this.cssSizeProperty]: this.state.lastSize };
 
-    return <div ref="self" className={`splitPanel ${this.props.direction}`}>
+    const klass = classNames("splitPanel", this.props.direction, {
+      'splitPanelResizing': this.state.dragging
+    });
+    return <div ref="self" className={klass}>
       <div className="splitPanelItem" style={firstStyle}>
         {this.props.children[0]}
       </div>

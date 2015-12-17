@@ -4,7 +4,15 @@
 .splitPanel {
     white-space: nowrap;
 
+    &.splitPanelResizing .splitPanelItem {
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+    }
+
     .splitPanelItem {
+        vertical-align: top;
         overflow: hidden;
     }
 

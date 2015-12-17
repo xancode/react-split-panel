@@ -17,8 +17,8 @@ Usage
 
 ### Styling
 
-Look at dist/splitPanel.less, there are a couple of variables but it's short so
-do whatever you want.
+Look at `dist/splitPanel.less`, there are a couple of variables but it's short
+so do whatever you want.
 
 Just remember to give the panel a height if you're going with a horizontal
 layout.

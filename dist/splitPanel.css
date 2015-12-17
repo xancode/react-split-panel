@@ -1,7 +1,14 @@
 .splitPanel {
   white-space: nowrap;
 }
+.splitPanel.splitPanelResizing .splitPanelItem {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
 .splitPanel .splitPanelItem {
+  vertical-align: top;
   overflow: hidden;
 }
 .splitPanel .splitPanelDivider {
