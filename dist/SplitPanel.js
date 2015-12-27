@@ -276,7 +276,7 @@ var SplitPanel = (function (_React$Component) {
         ref: "resizeHackObject",
         type: "text/html" });
       var klass = (0, _classnames2.default)("split-panel", this.props.direction, {
-        "splitPanelResizing": this.state.activeDividerIndex != -1
+        "split-panel-resizing": this.state.activeDividerIndex != -1
       });
       return _react2.default.createElement(
         "div",

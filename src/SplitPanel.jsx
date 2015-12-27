@@ -351,7 +351,7 @@ export default class SplitPanel extends React.Component {
       type="text/html">
     </object>;
     const klass = classNames("split-panel", this.props.direction, {
-      "splitPanelResizing": this.state.activeDividerIndex != -1,
+      "split-panel-resizing": this.state.activeDividerIndex != -1,
     });
     return <div ref="self" className={klass}>
       {resizeHackObject}
