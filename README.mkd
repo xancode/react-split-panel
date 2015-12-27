@@ -1,12 +1,22 @@
 React SplitPanel
 ================
+New in Version 2.x
+------------------
+
+ - Completely new, robust CSS (and now with nicer kebab-style-class-names).
+ - An infinite number of children are now supported.
+ - Automatically resizes all subpanels correctly when the panel is resized.
+ - Now tested in Chrome, Firefox, Edge and IE11.
+ - Support for the `weights`, `onWeightChange`, `defaultWeights` and `stepSize`
+   props (see below).
 
 Usage
 -----
-
 ### JSX
 
-    <SplitPanel direction="horizontal">
+Basic example (note more props are supported, see below):
+
+    <SplitPanel direction="horizontal" defaultWeights={[70, 30]}>
         <div>
             <p>First component here</p>
         </div>
@@ -15,22 +25,50 @@ Usage
         </div>
     </SplitPanel>
 
-### Styling
+*If you want to maintain the weight sizes separately (i.e., in a Redux store) 
+use the `weights` and `onWeightChange` props instead of `defaultWeights`. 
+This behaves similarly to the `value`, `onChange` and `defaultValue` props on 
+input elements.*
 
+### Props
+
+ - direction
+   Either "horizontal" (the default) or "vertical". The direction to layout 
+   subpanels.
+ - weights
+   The relative sizes (weights) given to each subpanel.
+ - onWeightChange
+   Called when an attempt is made to change the weights (e.g., the user 
+   dragging a divider). If using `weights` you must handle this otherwise the
+   user will be unable to resize the panels.
+ - defaultWeights
+   Use if you don't want to manually keep track of the weights. The user will be
+   able to resize subpanels. N.B. `weights` and `defaultWeights` are mutually
+   exclusive, you should only use one.
+ - stepSize
+   Force the subpanels to resize in increments of this value. For example, if
+   you have two subpanels, each displaying monospaced text, you may want to set
+   this to the width of a single character so that resizing always aligns with
+   the text columns.
+ - minPanelSize
+   The minimum size of a subpanel.
+
+### Styling
 Look at `dist/splitPanel.less`, there are a couple of variables but it's short
 so do whatever you want.
 
-Just remember to give the panel a height if you're going with a horizontal
-layout.
+**N.B. The styles have changed dramatically from version 1.x.**
 
-On the Horizon
---------------
-At some point I'll update this to support more than two sub-panels but right
-now it does everything I need.
+Also note that you should ensure the panel is given a suitable size by either
+manually setting a width/height in your CSS or using some other mechanism. E.g.,
+you may put the panel in a flex box. The main thing to remember is that while
+normal block elements will have a predefined size based on their content the
+split panel does not; it will simply fill the space given to it by your CSS.
 
 Contributing
 ------------
 Submit a pull request. I'll take a look at your code and if I like it I'll
 merge it. If not I'll either ignore you or tell you what to do to make me like
-your code. Such is life.
+your code.
+
 
