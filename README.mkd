@@ -1,5 +1,10 @@
 React SplitPanel
 ================
+
+**N.B. Even though this is labelled v2.0.0-beta you should prefer this version
+over the 1.x release. It has been given much more attention and has been tested
+in more browsers.**
+
 New in Version 2.x
 ------------------
 
