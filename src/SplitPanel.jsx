@@ -315,18 +315,6 @@ export default class SplitPanel extends React.Component {
   }
 
   render() {
-    // Which direction do we need to fill the divider?
-    const dividerStyle = {
-      outer: { overflow: "hidden" },
-      inner: {},
-    };
-    if (this.props.direction == "horizontal") {
-      dividerStyle.inner.height = window.innerHeight;
-    }
-    else {
-      dividerStyle.inner.width = window.innerWidth;
-    }
-
     // Create a sized splitPanelItem with a divider for each child, except...
     const childrenWithDividers = [];
     const children = React.Children.toArray(this.props.children);
@@ -342,15 +330,14 @@ export default class SplitPanel extends React.Component {
 
       // ...don't add a divider if it's the last panel.
       if (i < children.length - 1) {
-        const divStyle = _.extend({}, dividerStyle.outer, {
+        const dividerStyle = {
           [this.cssOffsetProperty]: this.offsets[i + 1] - this.dividerSize,
-        });
+        };
         childrenWithDividers.push(<div
           key={`divider-${i}`} ref={`divider-${i}`}
           className="split-panel-divider"
-          style={divStyle}
+          style={dividerStyle}
           onMouseDown={e => this.onDividerMouseDown(e, i)}>
-          <div style={dividerStyle.inner}></div>
         </div>);
       }
     }

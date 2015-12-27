@@ -234,17 +234,6 @@ var SplitPanel = (function (_React$Component) {
     value: function render() {
       var _this5 = this;
 
-      // Which direction do we need to fill the divider?
-      var dividerStyle = {
-        outer: { overflow: "hidden" },
-        inner: {}
-      };
-      if (this.props.direction == "horizontal") {
-        dividerStyle.inner.height = window.innerHeight;
-      } else {
-        dividerStyle.inner.width = window.innerWidth;
-      }
-
       // Create a sized splitPanelItem with a divider for each child, except...
       var childrenWithDividers = [];
       var children = _react2.default.Children.toArray(this.props.children);
@@ -264,18 +253,14 @@ var SplitPanel = (function (_React$Component) {
 
         // ...don't add a divider if it's the last panel.
         if (i < children.length - 1) {
-          var divStyle = _lodash2.default.extend({}, dividerStyle.outer, _defineProperty({}, _this5.cssOffsetProperty, _this5.offsets[i + 1] - _this5.dividerSize));
-          childrenWithDividers.push(_react2.default.createElement(
-            "div",
-            {
-              key: "divider-" + i, ref: "divider-" + i,
-              className: "split-panel-divider",
-              style: divStyle,
-              onMouseDown: function onMouseDown(e) {
-                return _this5.onDividerMouseDown(e, i);
-              } },
-            _react2.default.createElement("div", { style: dividerStyle.inner })
-          ));
+          var dividerStyle = _defineProperty({}, _this5.cssOffsetProperty, _this5.offsets[i + 1] - _this5.dividerSize);
+          childrenWithDividers.push(_react2.default.createElement("div", {
+            key: "divider-" + i, ref: "divider-" + i,
+            className: "split-panel-divider",
+            style: dividerStyle,
+            onMouseDown: function onMouseDown(e) {
+              return _this5.onDividerMouseDown(e, i);
+            } }));
         }
       };
 
