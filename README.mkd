@@ -31,27 +31,31 @@ This behaves similarly to the `value`, `onChange` and `defaultValue` props on
 input elements.*
 
 ### Props
+#### direction
+Either "horizontal" (the default) or "vertical". The direction to layout
+subpanels.
 
- - direction
-   Either "horizontal" (the default) or "vertical". The direction to layout 
-   subpanels.
- - weights
-   The relative sizes (weights) given to each subpanel.
- - onWeightChange
-   Called when an attempt is made to change the weights (e.g., the user 
-   dragging a divider). If using `weights` you must handle this otherwise the
-   user will be unable to resize the panels.
- - defaultWeights
-   Use if you don't want to manually keep track of the weights. The user will be
-   able to resize subpanels. N.B. `weights` and `defaultWeights` are mutually
-   exclusive, you should only use one.
- - stepSize
-   Force the subpanels to resize in increments of this value. For example, if
-   you have two subpanels, each displaying monospaced text, you may want to set
-   this to the width of a single character so that resizing always aligns with
-   the text columns.
- - minPanelSize
-   The minimum size of a subpanel.
+#### weights
+The relative sizes (weights) given to each subpanel.
+
+#### onWeightChange
+Called when an attempt is made to change the weights (e.g., the user dragging a
+divider). If using `weights` you must handle this otherwise the user will be
+unable to resize the panels.
+
+#### defaultWeights
+Use if you don't want to manually keep track of the weights. The user will be
+able to resize subpanels. N.B. `weights` and `defaultWeights` are mutually
+exclusive, you should only use one.
+
+#### stepSize
+Force the subpanels to resize in increments of this value. For example, if
+you have two subpanels, each displaying monospaced text, you may want to set
+this to the width of a single character so that resizing always aligns with
+the text columns.
+
+#### minPanelSize
+The minimum size of a subpanel.
 
 ### Styling
 Look at `dist/splitPanel.less`, there are a couple of variables but it's short
