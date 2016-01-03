@@ -1,15 +1,12 @@
 React SplitPanel
 ================
-
-**N.B. Even though this is labelled v2.0.0-beta you should prefer this version
-over the 1.x release. It has been given much more attention and has been tested
-in more browsers.**
+A resizeable weight-based split panel component.
 
 New in Version 2.x
 ------------------
 
  - Completely new, robust CSS (and now with nicer kebab-style-class-names).
- - An infinite number of children are now supported.
+ - Any number of children are now supported.
  - Automatically resizes all subpanels correctly when the panel is resized.
  - Now tested in Chrome, Firefox, Edge and IE11.
  - Support for the `weights`, `onWeightChange`, `defaultWeights` and `stepSize`
