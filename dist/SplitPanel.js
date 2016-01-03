@@ -69,7 +69,7 @@ var SplitPanel = (function (_React$Component) {
     // These two are attached to `window` because sometimes due to glitches we
     // can't do very much about we'll be unable to move the divider in time to
     // keep up with the mouse cursor, but we still need to move the divider to
-    // catch up and to release it when the user  lifts their finger.
+    // catch up and to release it when the user releases the divider.
     // N.B. These are attached in componentDidMount and detached in
     // componentWillUnmount.
     _this.onMouseMove = _this.onMouseMove.bind(_this);
@@ -77,53 +77,67 @@ var SplitPanel = (function (_React$Component) {
     return _this;
   }
 
-  /**
-   * Gets the weights for each panel. This prefers this.props.weights, falling
-   * through to this.state.weights then this.props.defaultWeights.
-   *
-   * An Error is thrown if no weights are specified.
-   */
-
   _createClass(SplitPanel, [{
-    key: "updateSizes",
-
-    /**
-     * Recalculates the sizes of each panel according to the weights and taking
-     * into account the space used by the dividers then updates this.state.sizes.
-     */
-    value: function updateSizes(weights) {
-      // TODO: Move the weight padding code in get weights() to a function and
-      // reuse it here.
-      weights = weights || this.weights;
-      var totalWeight = _lodash2.default.sum(weights);
-      // Total space taken by the dividers spread equally across all panels.
-      var dividerCompensation = this.dividerSize * (weights.length - 1) / weights.length;
-      var offsets = [];
-      var sizes = [];
-      for (var i = 0; i < weights.length; i++) {
-        offsets.push(_lodash2.default.sum(sizes) + dividerCompensation * i);
-        var proportion = weights[i] / totalWeight;
-        sizes.push(Math.max(proportion * this.refs.self[this.domSizeProperty] - dividerCompensation, this.props.minPanelSize));
-      }
-      this.setState({ sizes: sizes, offsets: offsets });
-    }
-  }, {
-    key: "emitWeightChange",
-    value: function emitWeightChange(newWeights) {
+    key: "render",
+    value: function render() {
       var _this2 = this;
 
-      // Only set weights on the state if we don't expect the parent to
-      // accept/reject the new weights by updating this.props.weights.
-      if (this.props.defaultWeights && this.props.defaultWeights.length) {
-        this.setState({ weights: newWeights }, function () {
-          return _this2.updateSizes();
-        });
+      // Create a sized splitPanelItem with a divider for each child, except...
+      var childrenWithDividers = [];
+      var children = _react2.default.Children.toArray(this.props.children);
+
+      var _loop = function _loop(i) {
+        var _style;
+
+        var style = (_style = {}, _defineProperty(_style, _this2.cssSizeProperty, _this2.sizes[i]), _defineProperty(_style, _this2.cssOffsetProperty, _this2.offsets[i]), _style);
+
+        childrenWithDividers.push(_react2.default.createElement(
+          "div",
+          { key: "panel-" + i,
+            className: "split-panel-item",
+            style: style },
+          children[i]
+        ));
+
+        // ...don't add a divider if it's the last panel.
+        if (i < children.length - 1) {
+          var dividerStyle = _defineProperty({}, _this2.cssOffsetProperty, _this2.offsets[i + 1] - _this2.dividerSize);
+          childrenWithDividers.push(_react2.default.createElement("div", {
+            key: "divider-" + i, ref: "divider-" + i,
+            className: "split-panel-divider",
+            style: dividerStyle,
+            onMouseDown: function onMouseDown(e) {
+              return _this2.onDividerMouseDown(e, i);
+            } }));
+        }
+      };
+
+      for (var i = 0; i < children.length; i++) {
+        _loop(i);
       }
-      // Notify the parent that we'd like to change the weights.
-      if (this.props.onWeightChange) {
-        this.props.onWeightChange(newWeights);
-      }
+
+      // Because elements don't have a resize event we create an <object> with
+      // no content and filling the entire panel. When this object's
+      // contentDocument.resize event fires we know to update the sizes of all
+      // the subpanels. :-)
+      var resizeHackObject = _react2.default.createElement("object", { className: "split-panel-resize-hack-object",
+        ref: "resizeHackObject",
+        type: "text/html" });
+      var klass = (0, _classnames2.default)("split-panel", this.props.direction, {
+        "split-panel-resizing": this.state.activeDividerIndex != -1
+      });
+      return _react2.default.createElement(
+        "div",
+        { ref: "self", className: klass },
+        resizeHackObject,
+        childrenWithDividers
+      );
     }
+
+    //////
+    // Component Lifecycle
+    //////
+
   }, {
     key: "componentWillReceiveProps",
     value: function componentWillReceiveProps(newProps) {
@@ -131,19 +145,6 @@ var SplitPanel = (function (_React$Component) {
         this.updateSizes(newProps.weights);
       }
     }
-
-    /**
-     * Determine whether the component should update.
-     *
-     * This is dependent on whether the children have changed or the weights
-     * have changed.
-     */
-    /*
-    shouldComponentUpdate(newProps, newState) {
-      return newState.sizes
-    }
-    */
-
   }, {
     key: "componentDidMount",
     value: function componentDidMount() {
@@ -164,6 +165,30 @@ var SplitPanel = (function (_React$Component) {
     value: function componentWillUnmount() {
       window.removeEventListener("mouseup", this.onMouseUp);
       window.removeEventListener("mousemove", this.onMouseMove);
+    }
+
+    //////
+    // Properties
+    //////
+    /**
+     * Gets the weights for each panel. This prefers this.props.weights, falling
+     * through to this.state.weights then this.props.defaultWeights.
+     *
+     * An Error is thrown if no weights are specified.
+     */
+
+  }, {
+    key: "onResizeHackObjectLoad",
+
+    //////
+    // Event Handlers
+    //////
+    value: function onResizeHackObjectLoad() {
+      var _this4 = this;
+
+      this.refs.resizeHackObject.contentDocument.defaultView.addEventListener("resize", function () {
+        return _this4.updateSizes();
+      });
     }
   }, {
     key: "onDividerMouseDown",
@@ -191,7 +216,6 @@ var SplitPanel = (function (_React$Component) {
       //  <previous>
       //  ----------
       //  <next>
-
       var prevIndex = this.state.activeDividerIndex;
       var nextIndex = prevIndex + 1;
       // First obtain the size difference, rounding it down to a multiple of
@@ -220,70 +244,70 @@ var SplitPanel = (function (_React$Component) {
         lastCursorPosition: e[this.cursorPositionProperty] - (diff - steppedDiff)
       });
     }
-  }, {
-    key: "onResizeHackObjectLoad",
-    value: function onResizeHackObjectLoad() {
-      var _this4 = this;
 
-      this.refs.resizeHackObject.contentDocument.defaultView.addEventListener("resize", function () {
-        return _this4.updateSizes();
-      });
-    }
+    //////
+    // Event Emitters
+    //////
+
   }, {
-    key: "render",
-    value: function render() {
+    key: "emitWeightChange",
+    value: function emitWeightChange(newWeights) {
       var _this5 = this;
 
-      // Create a sized splitPanelItem with a divider for each child, except...
-      var childrenWithDividers = [];
-      var children = _react2.default.Children.toArray(this.props.children);
-
-      var _loop = function _loop(i) {
-        var _style;
-
-        var style = (_style = {}, _defineProperty(_style, _this5.cssSizeProperty, _this5.sizes[i]), _defineProperty(_style, _this5.cssOffsetProperty, _this5.offsets[i]), _style);
-
-        childrenWithDividers.push(_react2.default.createElement(
-          "div",
-          { key: "panel-" + i,
-            className: "split-panel-item",
-            style: style },
-          children[i]
-        ));
-
-        // ...don't add a divider if it's the last panel.
-        if (i < children.length - 1) {
-          var dividerStyle = _defineProperty({}, _this5.cssOffsetProperty, _this5.offsets[i + 1] - _this5.dividerSize);
-          childrenWithDividers.push(_react2.default.createElement("div", {
-            key: "divider-" + i, ref: "divider-" + i,
-            className: "split-panel-divider",
-            style: dividerStyle,
-            onMouseDown: function onMouseDown(e) {
-              return _this5.onDividerMouseDown(e, i);
-            } }));
-        }
-      };
-
-      for (var i = 0; i < children.length; i++) {
-        _loop(i);
+      // Only set weights on the state if we don't expect the parent to
+      // accept/reject the new weights by updating this.props.weights.
+      if (this.props.defaultWeights && this.props.defaultWeights.length) {
+        this.setState({ weights: newWeights }, function () {
+          return _this5.updateSizes();
+        });
       }
+      // Notify the parent that we'd like to change the weights.
+      if (this.props.onWeightChange) {
+        this.props.onWeightChange(newWeights);
+      }
+    }
 
-      // Because elements don't have a resize event we create an <object> with
-      // no content and filling the entire panel. When this object's
-      // contentDocument.resize event fires we know to update the sizes of all
-      // the subpanels. :-)
-      var resizeHackObject = _react2.default.createElement("object", { className: "split-panel-resize-hack-object",
-        ref: "resizeHackObject",
-        type: "text/html" });
-      var klass = (0, _classnames2.default)("split-panel", this.props.direction, {
-        "split-panel-resizing": this.state.activeDividerIndex != -1
-      });
-      return _react2.default.createElement(
-        "div",
-        { ref: "self", className: klass },
-        resizeHackObject,
-        childrenWithDividers
-      );
+    //////
+    // Utilities
+    //////
+    /**
+     * Recalculates the size of each panel according to the weights, taking into
+     * account the space used by the dividers then updates this.state.sizes
+     * and this.state.offsets.
+     */
+
+  }, {
+    key: "updateSizes",
+    value: function updateSizes(weights) {
+      weights = this.padOrTruncateWeights(weights);
+      weights = weights || this.weights;
+      var totalWeight = _lodash2.default.sum(weights);
+      // Total space taken by the dividers spread equally across all panels.
+      var dividerCompensation = this.dividerSize * (weights.length - 1) / weights.length;
+      var offsets = [];
+      var sizes = [];
+      for (var i = 0; i < weights.length; i++) {
+        offsets.push(_lodash2.default.sum(sizes) + dividerCompensation * i);
+        var proportion = weights[i] / totalWeight;
+        sizes.push(Math.max(proportion * this.refs.self[this.domSizeProperty] - dividerCompensation, this.props.minPanelSize));
+      }
+      this.setState({ sizes: sizes, offsets: offsets });
+    }
+  }, {
+    key: "padOrTruncateWeights",
+    value: function padOrTruncateWeights(weights) {
+      var numChildren = _react2.default.Children.count(this.props.children);
+      if (weights.length < numChildren) {
+        var min = _lodash2.default.min(weights);
+        while (weights.length < numChildren) {
+          weights.push(min);
+        }
+        console.warn("SplitPanel: Only " + weights.length + " weights specified " + ("but there are " + numChildren + " subpanels; using " + min + " for the ") + "remaining subpanels");
+      } else if (weights.length > numChildren) {
+        weights = weights.splice(0, numChildren);
+        console.warn("SplitPanel: " + weights.length + " weights specified but " + ("there are only " + numChildren + " subpanels; ignoring additional weights"));
+      }
+      return weights;
     }
   }, {
     key: "weights",
@@ -298,24 +322,7 @@ var SplitPanel = (function (_React$Component) {
       } else {
         throw new Error("SplitPanel: You must set a 'weights' or 'defaultWeights' prop");
       }
-
-      var numChildren = _react2.default.Children.count(this.props.children);
-      if (weights.length < numChildren) {
-        var min = _lodash2.default.min(weights);
-        if (process.env.NODE_ENV != "production") {
-          console.warn("SplitPanel: Only " + weights.length + " weights specified but there are " + numChildren + " subpanels; using " + min + " for the remaining subpanels");
-        }
-        while (weights.length < numChildren) {
-          weights.push(min);
-        }
-      } else if (weights.length > numChildren) {
-        if (process.env.NODE_ENV != "production") {
-          console.warn("SplitPanel: " + weights.length + " weights specified but there are only " + numChildren + " subpanels; ignoring additional weights");
-        }
-        weights = weights.splice(0, numChildren);
-      }
-
-      return weights;
+      return this.padOrTruncateWeights(weights);
     }
   }, {
     key: "cursorPositionProperty",
@@ -384,13 +391,19 @@ var SplitPanel = (function (_React$Component) {
 SplitPanel.propTypes = {
   /**
    * The direction to layout subpanels. One of "horizontal" or "vertical".
+   *
+   * Default: horizontal
    */
   direction: _react2.default.PropTypes.oneOf(["horizontal", "vertical"]),
+
   /**
    * The minimum size (in pixels) of a subpanel. The divider will stop
    * abruptly if the user attempts to shrink a subpanel below this size.
+   *
+   * Default: 25
    */
   minPanelSize: _react2.default.PropTypes.number,
+
   /**
    * Called whenever a subpanel is resized.
    *
@@ -398,12 +411,14 @@ SplitPanel.propTypes = {
    * using `defaultWeights`.
    */
   onWeightChange: _react2.default.PropTypes.func,
+
   /**
    * The weights of each subpanel. If you're using this property you must
    * manually update this prop in response to `onWeightChange` otherwise
    * the subpanels will not resize.
    */
   weights: _react2.default.PropTypes.arrayOf(_react2.default.PropTypes.number),
+
   /**
    * The default weights to use when you are not managing the weights
    * manually via the `weights` and `onWeightChange` props.
@@ -411,10 +426,12 @@ SplitPanel.propTypes = {
   defaultWeights: _react2.default.PropTypes.arrayOf(_react2.default.PropTypes.number),
 
   /**
-   * The size of resize steps in pixels.
+   * The resize step size in pixels.
    *
    * Useful if you have monospaced text and you want to ensure the panel
    * is resized in increments of one character width.
+   *
+   * Default: 1
    */
   stepSize: _react2.default.PropTypes.number
 };

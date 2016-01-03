@@ -20,13 +20,19 @@ export default class SplitPanel extends React.Component {
   static propTypes = {
     /**
      * The direction to layout subpanels. One of "horizontal" or "vertical".
+     *
+     * Default: horizontal
      */
     direction: React.PropTypes.oneOf(["horizontal", "vertical"]),
+
     /**
      * The minimum size (in pixels) of a subpanel. The divider will stop
      * abruptly if the user attempts to shrink a subpanel below this size.
+     *
+     * Default: 25
      */
     minPanelSize: React.PropTypes.number,
+
     /**
      * Called whenever a subpanel is resized.
      *
@@ -34,12 +40,14 @@ export default class SplitPanel extends React.Component {
      * using `defaultWeights`.
      */
     onWeightChange: React.PropTypes.func,
+
     /**
      * The weights of each subpanel. If you're using this property you must
      * manually update this prop in response to `onWeightChange` otherwise
      * the subpanels will not resize.
      */
     weights: React.PropTypes.arrayOf(React.PropTypes.number),
+
     /**
      * The default weights to use when you are not managing the weights
      * manually via the `weights` and `onWeightChange` props.
@@ -47,10 +55,12 @@ export default class SplitPanel extends React.Component {
     defaultWeights: React.PropTypes.arrayOf(React.PropTypes.number),
 
     /**
-     * The size of resize steps in pixels.
+     * The resize step size in pixels.
      *
      * Useful if you have monospaced text and you want to ensure the panel
      * is resized in increments of one character width.
+     *
+     * Default: 1
      */
     stepSize: React.PropTypes.number,
   };
@@ -82,236 +92,11 @@ export default class SplitPanel extends React.Component {
     // These two are attached to `window` because sometimes due to glitches we
     // can't do very much about we'll be unable to move the divider in time to
     // keep up with the mouse cursor, but we still need to move the divider to
-    // catch up and to release it when the user  lifts their finger.
+    // catch up and to release it when the user releases the divider.
     // N.B. These are attached in componentDidMount and detached in
     // componentWillUnmount.
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onMouseUp = this.onMouseUp.bind(this);
-  }
-
-  /**
-   * Gets the weights for each panel. This prefers this.props.weights, falling
-   * through to this.state.weights then this.props.defaultWeights.
-   *
-   * An Error is thrown if no weights are specified.
-   */
-  get weights() {
-    let weights = null;
-    if (this.props.weights && this.props.weights.length) {
-      weights = this.props.weights;
-    }
-    else if (this.state.weights && this.state.weights.length) {
-      weights = this.state.weights;
-    }
-    else if (this.props.defaultWeights && this.props.defaultWeights.length) {
-      weights = this.props.defaultWeights;
-    }
-    else {
-      throw new Error("SplitPanel: You must set a 'weights' or 'defaultWeights' prop");
-    }
-
-    const numChildren = React.Children.count(this.props.children);
-    if (weights.length < numChildren) {
-      const min = _.min(weights);
-      if (process.env.NODE_ENV != "production") {
-        console.warn(`SplitPanel: Only ${weights.length} weights specified but there are ${numChildren} subpanels; using ${min} for the remaining subpanels`);
-      }
-      while (weights.length < numChildren) {
-        weights.push(min);
-      }
-    }
-    else if (weights.length > numChildren) {
-      if (process.env.NODE_ENV != "production") {
-        console.warn(`SplitPanel: ${weights.length} weights specified but there are only ${numChildren} subpanels; ignoring additional weights`);
-      }
-      weights = weights.splice(0, numChildren);
-    }
-
-    return weights;
-  }
-
-  /**
-   * Recalculates the sizes of each panel according to the weights and taking
-   * into account the space used by the dividers then updates this.state.sizes.
-   */
-  updateSizes(weights) {
-    // TODO: Move the weight padding code in get weights() to a function and
-    // reuse it here.
-    weights = weights || this.weights;
-    const totalWeight = _.sum(weights);
-    // Total space taken by the dividers spread equally across all panels.
-    const dividerCompensation =
-      this.dividerSize * (weights.length - 1) / weights.length;
-    const offsets = [];
-    const sizes = [];
-    for (let i = 0; i < weights.length; i++) {
-      offsets.push(_.sum(sizes) + dividerCompensation * i);
-      const proportion = weights[i] / totalWeight;
-      sizes.push(Math.max(
-        proportion * this.refs.self[this.domSizeProperty] - dividerCompensation,
-        this.props.minPanelSize
-      ));
-    }
-    this.setState({ sizes: sizes, offsets: offsets });
-  }
-
-  emitWeightChange(newWeights) {
-    // Only set weights on the state if we don't expect the parent to
-    // accept/reject the new weights by updating this.props.weights.
-    if (this.props.defaultWeights && this.props.defaultWeights.length) {
-      this.setState({ weights: newWeights }, () => this.updateSizes());
-    }
-    // Notify the parent that we'd like to change the weights.
-    if (this.props.onWeightChange) {
-      this.props.onWeightChange(newWeights);
-    }
-  }
-
-  componentWillReceiveProps(newProps) {
-    if (newProps.weights) {
-      this.updateSizes(newProps.weights);
-    }
-  }
-
-  /**
-   * Determine whether the component should update.
-   *
-   * This is dependent on whether the children have changed or the weights
-   * have changed.
-   */
-  /*
-  shouldComponentUpdate(newProps, newState) {
-    return newState.sizes
-  }
-  */
-
-  componentDidMount() {
-    window.addEventListener("mouseup", this.onMouseUp);
-    window.addEventListener("mousemove", this.onMouseMove);
-    // We do this here because we can't guarantee that the event handler will be
-    // added before data is assigned if we do it in the JSX.
-    this.refs.resizeHackObject.addEventListener("load", () => this.onResizeHackObjectLoad());
-    this.refs.resizeHackObject.data = "about:blank";
-    this.updateSizes();
-  }
-
-  componentWillUnmount() {
-    window.removeEventListener("mouseup", this.onMouseUp);
-    window.removeEventListener("mousemove", this.onMouseMove);
-  }
-  
-  get cursorPositionProperty() {
-    return this.props.direction == "horizontal" ? "clientX" : "clientY";
-  }
-
-  get cssSizeProperty() {
-    return this.props.direction == "horizontal" ? "width" : "height";
-  }
-
-  get cssOffsetProperty() {
-    return this.props.direction == "horizontal" ? "left" : "top";
-  }
-
-  get domSizeProperty() {
-    return this.props.direction == "horizontal" ?
-      "clientWidth" : "clientHeight";
-  }
-
-  get dividerSize() {
-    // During the initial render we can't calculate this, so default to 5px.
-    // A fresh render is forced after the component is mounted to it doesn't
-    // matter.
-    if (this.refs["divider-0"]) {
-      return this.refs["divider-0"][this.domSizeProperty];
-    }
-    else {
-      return 5;
-    }
-  }
-
-  onDividerMouseDown(e, dividerIndex) {
-    this.setState({
-      activeDividerIndex: dividerIndex,
-      lastCursorPosition: e[this.cursorPositionProperty],
-    });
-  }
-
-  onMouseUp() {
-    this.setState({ activeDividerIndex: -1 });
-  }
-
-  onMouseMove(e) {
-    if (this.state.activeDividerIndex == -1) return;
-    // If moving backwards (left or up) grow the next panel by taking space
-    // from the previous one. If moving forwards (right or down) grow the
-    // previous panel by taking space from the next.
-    //
-    // Horizontal: <previous>|<next>
-    // Vertical:
-    //  <previous>
-    //  ----------
-    //  <next>
-
-    const prevIndex = this.state.activeDividerIndex;
-    const nextIndex = prevIndex + 1;
-    // First obtain the size difference, rounding it down to a multiple of
-    // the step size...
-    let diff = e[this.cursorPositionProperty] - this.state.lastCursorPosition;
-    const steppedDiff = ((diff / this.props.stepSize) | 0) * this.props.stepSize;
-    if (steppedDiff == 0) {
-      // No change.
-      return;
-    }
-    // ...then make it proportional to the total weight rather than the
-    // container size.
-    const weights = this.weights;
-    const weightDiff = steppedDiff / this.refs.self[this.domSizeProperty] *
-      _.sum(weights);
-
-    // If weightDiff is negative we're moving backwards, so this will shrink
-    // <previous> and grow <next>. Otherwise, we're moving forwards and
-    // <previous> will grow while <next> shrinks.
-    weights[prevIndex] += weightDiff;
-    weights[nextIndex] -= weightDiff;
-    this.emitWeightChange(weights);
-    this.setState({
-      // We subtract the portion of the difference that we discarded to avoid
-      // accumulating rounding errors resulting in the cursor and divider
-      // positions drifting apart.
-      lastCursorPosition: e[this.cursorPositionProperty] - (diff - steppedDiff),
-    });
-  }
-
-  get sizes() {
-    const numChildren = React.Children.count(this.props.children);
-    if (this.state.sizes.length == numChildren) {
-      return this.state.sizes;
-    }
-    else {
-      // XXX: We can't calculate the sizes until the component has been rendered
-      // at least once (so we can't just call this.updateSizes() here) because
-      // we need to obtain the divider size from the DOM.
-      // Instead we say that all the panels are at the minimum size and hope
-      // the initial render occurs quickly. XXX: Extra XXX to emphasise how ugly
-      // this is.
-      return _.fill(new Array(numChildren), this.props.minPanelSize);
-    }
-  }
-
-  get offsets() {
-    const numChildren = React.Children.count(this.props.children);
-    if (this.state.offsets.length == numChildren) {
-      return this.state.offsets;
-    }
-    else {
-      // See the comment in `get sizes()`. The same applies here.
-      return _.fill(new Array(numChildren), 0);
-    }
-  }
-
-  onResizeHackObjectLoad() {
-    this.refs.resizeHackObject.contentDocument.defaultView.addEventListener(
-      "resize", () => this.updateSizes());
   }
 
   render() {
@@ -357,6 +142,234 @@ export default class SplitPanel extends React.Component {
       {resizeHackObject}
       {childrenWithDividers}
     </div>;
+  }
+
+  //////
+  // Component Lifecycle
+  //////
+  componentWillReceiveProps(newProps) {
+    if (newProps.weights) {
+      this.updateSizes(newProps.weights);
+    }
+  }
+
+  componentDidMount() {
+    window.addEventListener("mouseup", this.onMouseUp);
+    window.addEventListener("mousemove", this.onMouseMove);
+    // We do this here because we can't guarantee that the event handler will be
+    // added before data is assigned if we do it in the JSX.
+    this.refs.resizeHackObject.addEventListener("load", () => this.onResizeHackObjectLoad());
+    this.refs.resizeHackObject.data = "about:blank";
+    this.updateSizes();
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("mouseup", this.onMouseUp);
+    window.removeEventListener("mousemove", this.onMouseMove);
+  }
+
+  //////
+  // Properties
+  //////
+  /**
+   * Gets the weights for each panel. This prefers this.props.weights, falling
+   * through to this.state.weights then this.props.defaultWeights.
+   *
+   * An Error is thrown if no weights are specified.
+   */
+  get weights() {
+    let weights = null;
+    if (this.props.weights && this.props.weights.length) {
+      weights = this.props.weights;
+    }
+    else if (this.state.weights && this.state.weights.length) {
+      weights = this.state.weights;
+    }
+    else if (this.props.defaultWeights && this.props.defaultWeights.length) {
+      weights = this.props.defaultWeights;
+    }
+    else {
+      throw new Error("SplitPanel: You must set a 'weights' or 'defaultWeights' prop");
+    }
+    return this.padOrTruncateWeights(weights);
+  }
+
+  get cursorPositionProperty() {
+    return this.props.direction == "horizontal" ? "clientX" : "clientY";
+  }
+
+  get cssSizeProperty() {
+    return this.props.direction == "horizontal" ? "width" : "height";
+  }
+
+  get cssOffsetProperty() {
+    return this.props.direction == "horizontal" ? "left" : "top";
+  }
+
+  get domSizeProperty() {
+    return this.props.direction == "horizontal" ?
+      "clientWidth" : "clientHeight";
+  }
+
+  get dividerSize() {
+    // During the initial render we can't calculate this, so default to 5px.
+    // A fresh render is forced after the component is mounted to it doesn't
+    // matter.
+    if (this.refs["divider-0"]) {
+      return this.refs["divider-0"][this.domSizeProperty];
+    }
+    else {
+      return 5;
+    }
+  }
+
+  get sizes() {
+    const numChildren = React.Children.count(this.props.children);
+    if (this.state.sizes.length == numChildren) {
+      return this.state.sizes;
+    }
+    else {
+      // XXX: We can't calculate the sizes until the component has been rendered
+      // at least once (so we can't just call this.updateSizes() here) because
+      // we need to obtain the divider size from the DOM.
+      // Instead we say that all the panels are at the minimum size and hope
+      // the initial render occurs quickly. XXX: Extra XXX to emphasise how ugly
+      // this is.
+      return _.fill(new Array(numChildren), this.props.minPanelSize);
+    }
+  }
+
+  get offsets() {
+    const numChildren = React.Children.count(this.props.children);
+    if (this.state.offsets.length == numChildren) {
+      return this.state.offsets;
+    }
+    else {
+      // See the comment in `get sizes()`. The same applies here.
+      return _.fill(new Array(numChildren), 0);
+    }
+  }
+
+  //////
+  // Event Handlers
+  //////
+  onResizeHackObjectLoad() {
+    this.refs.resizeHackObject.contentDocument.defaultView.addEventListener(
+      "resize", () => this.updateSizes());
+  }
+
+  onDividerMouseDown(e, dividerIndex) {
+    this.setState({
+      activeDividerIndex: dividerIndex,
+      lastCursorPosition: e[this.cursorPositionProperty],
+    });
+  }
+
+  onMouseUp() {
+    this.setState({ activeDividerIndex: -1 });
+  }
+
+  onMouseMove(e) {
+    if (this.state.activeDividerIndex == -1) return;
+    // If moving backwards (left or up) grow the next panel by taking space
+    // from the previous one. If moving forwards (right or down) grow the
+    // previous panel by taking space from the next.
+    //
+    // Horizontal: <previous>|<next>
+    // Vertical:
+    //  <previous>
+    //  ----------
+    //  <next>
+    const prevIndex = this.state.activeDividerIndex;
+    const nextIndex = prevIndex + 1;
+    // First obtain the size difference, rounding it down to a multiple of
+    // the step size...
+    let diff = e[this.cursorPositionProperty] - this.state.lastCursorPosition;
+    const steppedDiff = ((diff / this.props.stepSize) | 0) * this.props.stepSize;
+    if (steppedDiff == 0) {
+      // No change.
+      return;
+    }
+    // ...then make it proportional to the total weight rather than the
+    // container size.
+    const weights = this.weights;
+    const weightDiff = steppedDiff / this.refs.self[this.domSizeProperty] *
+      _.sum(weights);
+
+    // If weightDiff is negative we're moving backwards, so this will shrink
+    // <previous> and grow <next>. Otherwise, we're moving forwards and
+    // <previous> will grow while <next> shrinks.
+    weights[prevIndex] += weightDiff;
+    weights[nextIndex] -= weightDiff;
+    this.emitWeightChange(weights);
+    this.setState({
+      // We subtract the portion of the difference that we discarded to avoid
+      // accumulating rounding errors resulting in the cursor and divider
+      // positions drifting apart.
+      lastCursorPosition: e[this.cursorPositionProperty] - (diff - steppedDiff),
+    });
+  }
+
+  //////
+  // Event Emitters
+  //////
+  emitWeightChange(newWeights) {
+    // Only set weights on the state if we don't expect the parent to
+    // accept/reject the new weights by updating this.props.weights.
+    if (this.props.defaultWeights && this.props.defaultWeights.length) {
+      this.setState({ weights: newWeights }, () => this.updateSizes());
+    }
+    // Notify the parent that we'd like to change the weights.
+    if (this.props.onWeightChange) {
+      this.props.onWeightChange(newWeights);
+    }
+  }
+
+  //////
+  // Utilities
+  //////
+  /**
+   * Recalculates the size of each panel according to the weights, taking into
+   * account the space used by the dividers then updates this.state.sizes
+   * and this.state.offsets.
+   */
+  updateSizes(weights) {
+    weights = this.padOrTruncateWeights(weights);
+    weights = weights || this.weights;
+    const totalWeight = _.sum(weights);
+    // Total space taken by the dividers spread equally across all panels.
+    const dividerCompensation =
+      this.dividerSize * (weights.length - 1) / weights.length;
+    const offsets = [];
+    const sizes = [];
+    for (let i = 0; i < weights.length; i++) {
+      offsets.push(_.sum(sizes) + dividerCompensation * i);
+      const proportion = weights[i] / totalWeight;
+      sizes.push(Math.max(
+        proportion * this.refs.self[this.domSizeProperty] - dividerCompensation,
+        this.props.minPanelSize
+      ));
+    }
+    this.setState({ sizes: sizes, offsets: offsets });
+  }
+
+  padOrTruncateWeights(weights) {
+    const numChildren = React.Children.count(this.props.children);
+    if (weights.length < numChildren) {
+      const min = _.min(weights);
+      while (weights.length < numChildren) {
+        weights.push(min);
+      }
+      console.warn(`SplitPanel: Only ${weights.length} weights specified ` +
+        `but there are ${numChildren} subpanels; using ${min} for the ` +
+        `remaining subpanels`);
+    }
+    else if (weights.length > numChildren) {
+      weights = weights.splice(0, numChildren);
+      console.warn(`SplitPanel: ${weights.length} weights specified but ` +
+        `there are only ${numChildren} subpanels; ignoring additional weights`);
+    }
+    return weights;
   }
 }
 
