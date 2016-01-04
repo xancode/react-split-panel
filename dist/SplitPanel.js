@@ -279,8 +279,8 @@ var SplitPanel = (function (_React$Component) {
   }, {
     key: "updateSizes",
     value: function updateSizes(weights) {
-      weights = this.padOrTruncateWeights(weights);
       weights = weights || this.weights;
+      weights = this.padOrTruncateWeights(weights);
       var totalWeight = _lodash2.default.sum(weights);
       // Total space taken by the dividers spread equally across all panels.
       var dividerCompensation = this.dividerSize * (weights.length - 1) / weights.length;

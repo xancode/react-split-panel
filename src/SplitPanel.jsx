@@ -334,8 +334,8 @@ export default class SplitPanel extends React.Component {
    * and this.state.offsets.
    */
   updateSizes(weights) {
-    weights = this.padOrTruncateWeights(weights);
     weights = weights || this.weights;
+    weights = this.padOrTruncateWeights(weights);
     const totalWeight = _.sum(weights);
     // Total space taken by the dividers spread equally across all panels.
     const dividerCompensation =
