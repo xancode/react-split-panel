@@ -343,7 +343,7 @@ export default class SplitPanel extends React.Component {
     const offsets = [];
     const sizes = [];
     for (let i = 0; i < weights.length; i++) {
-      offsets.push(_.sum(sizes) + dividerCompensation * i);
+      offsets.push(_.sum(sizes) + 2 * dividerCompensation * i);
       const proportion = weights[i] / totalWeight;
       sizes.push(Math.max(
         proportion * this.refs.self[this.domSizeProperty] - dividerCompensation,

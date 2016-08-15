@@ -1,10 +1,10 @@
 "use strict";
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _react = require("react");
 
@@ -42,8 +42,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
  * issued. If you specified too few the minimum weight specified is
  * used for all remaining elements. Any additional weights will be ignored.
  */
-
-var SplitPanel = (function (_React$Component) {
+var SplitPanel = function (_React$Component) {
   _inherits(SplitPanel, _React$Component);
 
   function SplitPanel() {
@@ -180,6 +179,7 @@ var SplitPanel = (function (_React$Component) {
   }, {
     key: "onResizeHackObjectLoad",
 
+
     //////
     // Event Handlers
     //////
@@ -287,7 +287,7 @@ var SplitPanel = (function (_React$Component) {
       var offsets = [];
       var sizes = [];
       for (var i = 0; i < weights.length; i++) {
-        offsets.push(_lodash2.default.sum(sizes) + dividerCompensation * i);
+        offsets.push(_lodash2.default.sum(sizes) + 2 * dividerCompensation * i);
         var proportion = weights[i] / totalWeight;
         sizes.push(Math.max(proportion * this.refs.self[this.domSizeProperty] - dividerCompensation, this.props.minPanelSize));
       }
@@ -386,7 +386,7 @@ var SplitPanel = (function (_React$Component) {
   }]);
 
   return SplitPanel;
-})(_react2.default.Component);
+}(_react2.default.Component);
 
 SplitPanel.propTypes = {
   /**
