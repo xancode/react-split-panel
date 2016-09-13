@@ -48,7 +48,7 @@ var SplitPanel = function (_React$Component) {
   function SplitPanel() {
     _classCallCheck(this, SplitPanel);
 
-    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SplitPanel).call(this));
+    var _this = _possibleConstructorReturn(this, (SplitPanel.__proto__ || Object.getPrototypeOf(SplitPanel)).call(this));
 
     _this.state = {
       // The last position of the cursor. Used by onMouseMove to calculate
@@ -140,8 +140,9 @@ var SplitPanel = function (_React$Component) {
   }, {
     key: "componentWillReceiveProps",
     value: function componentWillReceiveProps(newProps) {
+      var newChildren = newProps.children || this.props.children;
       if (newProps.weights) {
-        this.updateSizes(newProps.weights);
+        this.updateSizes(newProps.weights, newChildren);
       }
     }
   }, {
@@ -278,9 +279,9 @@ var SplitPanel = function (_React$Component) {
 
   }, {
     key: "updateSizes",
-    value: function updateSizes(weights) {
+    value: function updateSizes(weights, children) {
       weights = weights || this.weights;
-      weights = this.padOrTruncateWeights(weights);
+      weights = this.padOrTruncateWeights(weights, children);
       var totalWeight = _lodash2.default.sum(weights);
       // Total space taken by the dividers spread equally across all panels.
       var dividerCompensation = this.dividerSize * (weights.length - 1) / weights.length;
@@ -296,7 +297,9 @@ var SplitPanel = function (_React$Component) {
   }, {
     key: "padOrTruncateWeights",
     value: function padOrTruncateWeights(weights) {
-      var numChildren = _react2.default.Children.count(this.props.children);
+      var children = arguments.length <= 1 || arguments[1] === undefined ? this.props.children : arguments[1];
+
+      var numChildren = _react2.default.Children.count(children);
       if (weights.length < numChildren) {
         var min = _lodash2.default.min(weights);
         while (weights.length < numChildren) {
