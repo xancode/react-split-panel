@@ -148,9 +148,8 @@ export default class SplitPanel extends React.Component {
   // Component Lifecycle
   //////
   componentWillReceiveProps(newProps) {
-    const newChildren = newProps.children || this.props.children;
     if (newProps.weights) {
-      this.updateSizes(newProps.weights, newChildren);
+      this.updateSizes(newProps.weights, newProps.children);
     }
   }
 

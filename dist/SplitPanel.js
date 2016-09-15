@@ -140,9 +140,8 @@ var SplitPanel = function (_React$Component) {
   }, {
     key: "componentWillReceiveProps",
     value: function componentWillReceiveProps(newProps) {
-      var newChildren = newProps.children || this.props.children;
       if (newProps.weights) {
-        this.updateSizes(newProps.weights, newChildren);
+        this.updateSizes(newProps.weights, newProps.children);
       }
     }
   }, {
