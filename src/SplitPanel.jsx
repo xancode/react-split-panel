@@ -149,7 +149,7 @@ export default class SplitPanel extends React.Component {
   //////
   componentWillReceiveProps(newProps) {
     if (newProps.weights) {
-      this.updateSizes(newProps.weights);
+      this.updateSizes(newProps.weights, newProps.children);
     }
   }
 
@@ -333,9 +333,9 @@ export default class SplitPanel extends React.Component {
    * account the space used by the dividers then updates this.state.sizes
    * and this.state.offsets.
    */
-  updateSizes(weights) {
+  updateSizes(weights, children) {
     weights = weights || this.weights;
-    weights = this.padOrTruncateWeights(weights);
+    weights = this.padOrTruncateWeights(weights, children);
     const totalWeight = _.sum(weights);
     // Total space taken by the dividers spread equally across all panels.
     const dividerCompensation =
@@ -353,8 +353,8 @@ export default class SplitPanel extends React.Component {
     this.setState({ sizes: sizes, offsets: offsets });
   }
 
-  padOrTruncateWeights(weights) {
-    const numChildren = React.Children.count(this.props.children);
+  padOrTruncateWeights(weights, children = this.props.children) {
+    const numChildren = React.Children.count(children);
     if (weights.length < numChildren) {
       const min = _.min(weights);
       while (weights.length < numChildren) {
