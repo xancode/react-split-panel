@@ -360,22 +360,22 @@ var SplitPanel = function (_React$Component) {
       var offsets = sizesAndOffsets.offsets;
       var sumOfSizes = _lodash2.default.sum(sizes);
       var domContainerSize = this.refs.self[this.domSizeProperty];
-      var expectedSumOfSizes = domContainerSize - weights.length - 1 * this.dividerSize;
+      var expectedSumOfSizes = domContainerSize - this.dividerSize * (weights.length - 1);
       var diff = sumOfSizes - expectedSumOfSizes;
-      // console.log("Adjusting: sumOfSizes is " + diff + " higher than expectedSumOfSizes");
 
       if (diff > 0) {
+        // console.log("Adjusting: sumOfSizes is " + diff + " higher than expectedSumOfSizes");
         this.adjustMaxDown(sizes, diff);
-        var adjustedWeights = _lodash2.default.map(sizes, function (size) {
+        return _lodash2.default.map(sizes, function (size) {
           return size / expectedSumOfSizes * 100;
         });
-        return adjustedWeights;
       } else if (diff < 0) {
-        this.adjustMinUp(sizes, diff);
-        var _adjustedWeights = _lodash2.default.map(sizes, function (size) {
+        var absDiff = -diff;
+        // console.log("Adjusting: sumOfSizes is " + absDiff + " lower than expectedSumOfSizes");
+        this.adjustMinUp(sizes, absDiff);
+        return _lodash2.default.map(sizes, function (size) {
           return size / expectedSumOfSizes * 100;
         });
-        return _adjustedWeights;
       }
 
       return weights;

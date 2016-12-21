@@ -409,25 +409,25 @@ export default class SplitPanel extends React.Component {
     //correct for sizes that got too big or too small
     const sizesAndOffsets = this.calcSizesAndOffsets(weights);
     const sizes = sizesAndOffsets.sizes;
-    const offsets = sizesAndOffsets.offsets;
+    // const offsets = sizesAndOffsets.offsets;
     const sumOfSizes = _.sum(sizes);
     const domContainerSize = this.refs.self[this.domSizeProperty];
-    const expectedSumOfSizes = domContainerSize - weights.length - 1 * this.dividerSize;
+    const expectedSumOfSizes = domContainerSize - this.dividerSize * (weights.length - 1);
     const diff = sumOfSizes - expectedSumOfSizes;
-    // console.log("Adjusting: sumOfSizes is " + diff + " higher than expectedSumOfSizes");
 
     if (diff > 0) {
+      // console.log("Adjusting: sumOfSizes is " + diff + " higher than expectedSumOfSizes");
       this.adjustMaxDown(sizes, diff);
-      const adjustedWeights = _.map(sizes, (size) => {
+      return _.map(sizes, (size) => {
         return size / expectedSumOfSizes * 100;
       });
-      return adjustedWeights;
     } else if (diff < 0) {
-      this.adjustMinUp(sizes, diff);
-      const adjustedWeights = _.map(sizes, (size) => {
+      const absDiff = -diff;
+      // console.log("Adjusting: sumOfSizes is " + absDiff + " lower than expectedSumOfSizes");
+      this.adjustMinUp(sizes, absDiff);
+      return _.map(sizes, (size) => {
         return size / expectedSumOfSizes * 100;
       });
-      return adjustedWeights;
     }
 
     return weights;
