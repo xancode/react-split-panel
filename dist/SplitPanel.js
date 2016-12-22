@@ -73,10 +73,6 @@ var SplitPanel = function (_React$Component) {
         // componentWillUnmount.
         _this.onMouseMove = _this.onMouseMove.bind(_this);
         _this.onMouseUp = _this.onMouseUp.bind(_this);
-        _this.doAdjustmentOnMouseUp = true;
-        _this.exitMouseMoveOnViolation = true;
-        _this.adjustOnReceiveProps = true;
-        _this.doAdjustmentOnMouseMove = false; //Not recommended, seems to cause incorrect results
         return _this;
     }
 
@@ -145,7 +141,7 @@ var SplitPanel = function (_React$Component) {
         key: "componentWillReceiveProps",
         value: function componentWillReceiveProps(newProps) {
             if (newProps.weights) {
-                var weights = this.adjustOnReceiveProps ? this.adjust(newProps.weights) : newProps.weights;
+                var weights = this.props.adjustOnReceiveProps ? this.adjust(newProps.weights) : newProps.weights;
                 // console.log("componentWillReceiveProps updating with weights: ", weights);
                 this.updateSizes(weights);
             }
@@ -213,7 +209,7 @@ var SplitPanel = function (_React$Component) {
             //But as soon as they let go it'll fix itself
             var mouseIsDown = this.state.activeDividerIndex !== -1;
             var weights = this.weights;
-            if (mouseIsDown && this.doAdjustmentOnMouseUp && weights) {
+            if (mouseIsDown && this.props.doAdjustmentOnMouseUp && weights) {
                 var adjustedWeights = this.adjust(weights);
                 this.emitWeightChange(adjustedWeights);
             }
@@ -266,7 +262,7 @@ var SplitPanel = function (_React$Component) {
             // console.log("prevWeightViolated", prevWeightViolated);
             // console.log("nextWeightViolated", nextWeightViolated);
 
-            if (this.exitMouseMoveOnViolation && (prevWeightViolated || nextWeightViolated)) {
+            if (this.props.exitMouseMoveOnViolation && (prevWeightViolated || nextWeightViolated)) {
                 return;
             }
 
@@ -276,7 +272,7 @@ var SplitPanel = function (_React$Component) {
             weights[prevIndex] += weightDiff;
             weights[nextIndex] -= weightDiff;
 
-            if (this.doAdjustmentOnMouseMove) {
+            if (this.props.doAdjustmentOnMouseMove) {
                 var adjustedWeights = this.adjust(weights);
                 this.emitWeightChange(adjustedWeights);
             } else {
@@ -456,6 +452,7 @@ var SplitPanel = function (_React$Component) {
         key: "updateSizes",
         value: function updateSizes(weights, children) {
             var sizesAndOffsets = this.calcSizesAndOffsets(weights, children);
+            // console.log("sizesAndOffsets", sizesAndOffsets);
             this.setState(sizesAndOffsets);
         }
 
@@ -616,11 +613,56 @@ SplitPanel.propTypes = {
      *
      * Default: 1
      */
-    stepSize: _react2.default.PropTypes.number
+    stepSize: _react2.default.PropTypes.number,
+
+    /**
+     * Bool that controls adjustment on mouse up functionality
+     *
+     * Used to adjust the weights after a fast mousemove by the user
+     * Without it they may start to exceed the dimensions of the container
+     *
+     * Default: true
+     */
+    doAdjustmentOnMouseUp: _react2.default.PropTypes.bool,
+
+    /**
+     * Bool that controls exit on violation during mouse move functionality
+     *
+     * During the mouse move, if the minPanelSize is violated,
+     * Don't go through with the state change
+     *
+     * Default: true
+     */
+    exitMouseMoveOnViolation: _react2.default.PropTypes.bool,
+
+    /**
+     * Bool that controls adjustment on componentWillReceiveProps
+     *
+     * Used to adjust the weights when getting new props
+     *
+     * Default: true
+     */
+    adjustOnReceiveProps: _react2.default.PropTypes.bool,
+
+    /**
+     * Bool that controls adjustment on mouse move functionality
+     *
+     * Used to adjust the weights during a fast mousemove by the user
+     * Without it they may start to exceed the dimensions of the container
+     * This one is a bit risky since the action is in the middle of happening
+     * Optional and not recommended unless you're getting better results with it
+     *
+     * Default: false
+     */
+    doAdjustmentOnMouseMove: _react2.default.PropTypes.bool
 };
 SplitPanel.defaultProps = {
     direction: "horizontal",
     minPanelSize: 25,
-    stepSize: 1
+    stepSize: 1,
+    doAdjustmentOnMouseUp: true,
+    exitMouseMoveOnViolation: true,
+    adjustOnReceiveProps: true,
+    doAdjustmentOnMouseMove: false
 };
 exports.default = SplitPanel;
