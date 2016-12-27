@@ -63,12 +63,57 @@ export default class SplitPanel extends React.Component {
      * Default: 1
      */
     stepSize: React.PropTypes.number,
+
+    /**
+     * Bool that controls adjustment on mouse up functionality
+     *
+     * Used to adjust the weights after a fast mousemove by the user
+     * Without it they may start to exceed the dimensions of the container
+     *
+     * Default: true
+     */
+    doAdjustmentOnMouseUp: React.PropTypes.bool,
+
+    /**
+     * Bool that controls exit on violation during mouse move functionality
+     *
+     * During the mouse move, if the minPanelSize is violated,
+     * Don't go through with the state change
+     *
+     * Default: true
+     */
+    exitMouseMoveOnViolation: React.PropTypes.bool,
+
+    /**
+     * Bool that controls adjustment on componentWillReceiveProps
+     *
+     * Used to adjust the weights when getting new props
+     *
+     * Default: true
+     */
+    adjustOnReceiveProps: React.PropTypes.bool,
+
+    /**
+     * Bool that controls adjustment on mouse move functionality
+     *
+     * Used to adjust the weights during a fast mousemove by the user
+     * Without it they may start to exceed the dimensions of the container
+     * This one is a bit risky since the action is in the middle of happening
+     * Optional and not recommended unless you're getting better results with it
+     *
+     * Default: false
+     */
+    doAdjustmentOnMouseMove: React.PropTypes.bool
   };
 
   static defaultProps = {
     direction: "horizontal",
     minPanelSize: 25,
     stepSize: 1,
+    doAdjustmentOnMouseUp: true,
+    exitMouseMoveOnViolation: true,
+    adjustOnReceiveProps: true,
+    doAdjustmentOnMouseMove: false
   };
 
   constructor() {
@@ -100,6 +145,7 @@ export default class SplitPanel extends React.Component {
   }
 
   render() {
+
     // Create a sized splitPanelItem with a divider for each child, except...
     const childrenWithDividers = [];
     const children = React.Children.toArray(this.props.children);
@@ -110,8 +156,8 @@ export default class SplitPanel extends React.Component {
       };
 
       childrenWithDividers.push(<div key={`panel-${i}`}
-        className="split-panel-item"
-        style={style}>{children[i]}</div>);
+                                     className="split-panel-item"
+                                     style={style}>{children[i]}</div>);
 
       // ...don't add a divider if it's the last panel.
       if (i < children.length - 1) {
@@ -132,8 +178,8 @@ export default class SplitPanel extends React.Component {
     // contentDocument.resize event fires we know to update the sizes of all
     // the subpanels. :-)
     const resizeHackObject = <object className="split-panel-resize-hack-object"
-      ref="resizeHackObject"
-      type="text/html">
+                                     ref="resizeHackObject"
+                                     type="text/html">
     </object>;
     const klass = classNames("split-panel", this.props.direction, {
       "split-panel-resizing": this.state.activeDividerIndex != -1,
@@ -148,8 +194,12 @@ export default class SplitPanel extends React.Component {
   // Component Lifecycle
   //////
   componentWillReceiveProps(newProps) {
+    //Make sure to call padOrTruncateWeights with the children from newProps,
+    //Otherwise it'll check the old children and won't render properly until re-sized
     if (newProps.weights) {
-      this.updateSizes(newProps.weights, newProps.children);
+      const weights = this.padOrTruncateWeights(newProps.weights, newProps.children);
+      const adjustedWeights = this.props.adjustOnReceiveProps ? this.adjust(weights) : weights;
+      this.updateSizes(adjustedWeights);
     }
   }
 
@@ -259,13 +309,24 @@ export default class SplitPanel extends React.Component {
   }
 
   onDividerMouseDown(e, dividerIndex) {
-    this.setState({
+    const newState = {
       activeDividerIndex: dividerIndex,
       lastCursorPosition: e[this.cursorPositionProperty],
-    });
+    };
+    this.setState(newState);
   }
 
   onMouseUp() {
+    //Adjust any messed up state at this point
+    //So they can drag around as much as they want, and state will get out of whack
+    //But as soon as they let go it'll fix itself
+    const mouseIsDown = this.state.activeDividerIndex !== -1;
+    const weights = this.weights;
+    if (mouseIsDown && this.props.doAdjustmentOnMouseUp && weights) {
+      const adjustedWeights = this.adjust(weights);
+      this.emitWeightChange(adjustedWeights);
+    }
+
     this.setState({ activeDividerIndex: -1 });
   }
 
@@ -284,8 +345,8 @@ export default class SplitPanel extends React.Component {
     const nextIndex = prevIndex + 1;
     // First obtain the size difference, rounding it down to a multiple of
     // the step size...
-    let diff = e[this.cursorPositionProperty] - this.state.lastCursorPosition;
-    const steppedDiff = ((diff / this.props.stepSize) | 0) * this.props.stepSize;
+    const diff = e[this.cursorPositionProperty] - this.state.lastCursorPosition;
+    const steppedDiff = (diff / this.props.stepSize | 0) * this.props.stepSize;
     if (steppedDiff == 0) {
       // No change.
       return;
@@ -293,21 +354,49 @@ export default class SplitPanel extends React.Component {
     // ...then make it proportional to the total weight rather than the
     // container size.
     const weights = this.weights;
-    const weightDiff = steppedDiff / this.refs.self[this.domSizeProperty] *
-      _.sum(weights);
+    const weightDiff = steppedDiff / this.refs.self[this.domSizeProperty] * _.sum(weights);
+
+    // handle the case where minPanelSize is respected for the small panel, but its neighbor grows (it shouldn't)
+    const weightPrev = weights[prevIndex];
+    const weightNext = weights[nextIndex];
+    const minWeight = this.pxToWeight(weights, this.props.minPanelSize);
+
+    function weightViolated(weight, minWeight, directionIsWrong) {
+      return (weight <= minWeight) && directionIsWrong;
+    }
+
+    //the previous weight is violated when it's too small, and we're moving in the negative direction, so it's getting smaller
+    const prevWeightViolated = weightViolated(weightPrev, minWeight, weightDiff < 0);
+
+    //the next weight is violated when it's too small, and we're moving in the positive direction, so it's getting smaller
+    const nextWeightViolated = weightViolated(weightNext, minWeight, weightDiff > 0);
+
+    // console.log("prevWeightViolated", prevWeightViolated);
+    // console.log("nextWeightViolated", nextWeightViolated);
+
+    if (this.props.exitMouseMoveOnViolation && (prevWeightViolated || nextWeightViolated)) {
+      return;
+    }
 
     // If weightDiff is negative we're moving backwards, so this will shrink
     // <previous> and grow <next>. Otherwise, we're moving forwards and
     // <previous> will grow while <next> shrinks.
     weights[prevIndex] += weightDiff;
     weights[nextIndex] -= weightDiff;
-    this.emitWeightChange(weights);
-    this.setState({
+
+    if (this.props.doAdjustmentOnMouseMove) {
+      const adjustedWeights = this.adjust(weights);
+      this.emitWeightChange(adjustedWeights);
+    } else {
+      this.emitWeightChange(weights);
+    }
+    const newState = {
       // We subtract the portion of the difference that we discarded to avoid
       // accumulating rounding errors resulting in the cursor and divider
       // positions drifting apart.
-      lastCursorPosition: e[this.cursorPositionProperty] - (diff - steppedDiff),
-    });
+      lastCursorPosition: e[this.cursorPositionProperty] - (diff - steppedDiff)
+    };
+    this.setState(newState);
   }
 
   //////
@@ -328,48 +417,183 @@ export default class SplitPanel extends React.Component {
   //////
   // Utilities
   //////
+
+
+  /**
+   * Return a new array of sizes with the adjustment made
+   * The adjustment is to subtract adjustmentNeeded from the largest size in the array
+   *
+   * @param originalSizes
+   * @param adjustmentNeeded
+   */
+  adjustMaxDown(originalSizes, adjustmentNeeded) {
+    const sizes = _.clone(originalSizes);
+    let maxIndex = 0;
+    let maxPanelSize = sizes[0];
+    for (let i = 0; i < sizes.length; i++) {
+      if (sizes[i] > maxPanelSize) {
+        maxPanelSize = sizes[i];
+        maxIndex = i;
+      }
+    }
+    sizes[maxIndex] -= adjustmentNeeded;
+    return sizes;
+  }
+
+  /**
+   * Return a new array of sizes with the adjustment made
+   * The adjustment is to add adjustmentNeeded to the smallest size in the array
+   *
+   * @param originalSizes
+   * @param adjustmentNeeded
+   */
+  adjustMinUp(originalSizes, adjustmentNeeded) {
+    const sizes = _.clone(originalSizes);
+    let minIndex = 0;
+    let minPanelSize = sizes[0];
+    for (let i = 0; i < sizes.length; i++) {
+      if (sizes[i] < minPanelSize) {
+        minPanelSize = sizes[i];
+        minIndex = i;
+      }
+    }
+    sizes[minIndex] += adjustmentNeeded;
+    return sizes;
+  }
+
+  /**
+   * Adjust the weights based on the expected sizes in pixels and the dom container size
+   * When the user moves the divider quickly, the weights get bigger/smaller than they should
+   * This is how we adjust to respect minPanelSize and the dom container size
+   *
+   * @param weights
+   * @returns {*}
+   */
+  adjust(weights) {
+    const sizesAndOffsets = this.calcSizesAndOffsets(weights);
+    const sizes = sizesAndOffsets.sizes;
+    // const offsets = sizesAndOffsets.offsets;
+    const sumOfSizes = _.sum(sizes);
+    const domContainerSize = this.refs.self[this.domSizeProperty];
+    const expectedSumOfSizes = domContainerSize - this.dividerSize * (weights.length - 1);
+    const diff = sumOfSizes - expectedSumOfSizes;
+
+    if (diff > 0) {
+      // console.log("Adjusting: sumOfSizes is " + diff + " higher than expectedSumOfSizes");
+      const adjustedSizes = this.adjustMaxDown(sizes, diff);
+      return _.map(adjustedSizes, (size) => {
+        return size / expectedSumOfSizes * 100;
+      });
+    } else if (diff < 0) {
+      const absDiff = -diff;
+      // console.log("Adjusting: sumOfSizes is " + absDiff + " lower than expectedSumOfSizes");
+      const adjustedSizes = this.adjustMinUp(sizes, absDiff);
+      return _.map(adjustedSizes, (size) => {
+        return size / expectedSumOfSizes * 100;
+      });
+    }
+
+    return weights;
+  }
+
+  /**
+   * Return the amount of pixels this panel should take up
+   * Take into account the number of weights, and the space that the dividers take up
+   *
+   * Example
+   *   There are 4 weights, and the current one is 27%
+   *   The container is 1000px, and the dividers are 5px
+   *   4 weights means 3 dividers. The total space they take up is then 15px
+   *   The total amount of pixels that the panels themselves can take up is 1000px - 15px = 985px
+   *   27% of 985px is 265.95px
+   *
+   * @param weights
+   * @param index
+   * @returns {number}
+   */
+  weightToPx(weights, index) {
+    // Should always be 100, todo consider validating here
+    const totalWeight = _.sum(weights);
+
+    // The current weight's proportion of the entire container (so 27% becomes 0.27)
+    const proportion = weights[index] / totalWeight;
+
+    const totalSpaceTakenByDividers = this.dividerSize * (weights.length - 1);
+
+    const spaceLeftForPanels = this.refs.self[this.domSizeProperty] - totalSpaceTakenByDividers;
+
+    return proportion * spaceLeftForPanels;
+  }
+
+  /**
+   * Return the weight that this amount of pixels corresponds to
+   *
+   * @param weights
+   * @param pixels
+   * @returns {number}
+   */
+  pxToWeight(weights, pixels) {
+    const totalSpaceTakenByDividers = this.dividerSize * (weights.length - 1);
+
+    const spaceLeftForPanels = this.refs.self[this.domSizeProperty] - totalSpaceTakenByDividers;
+
+    return (100 * pixels) / spaceLeftForPanels;
+  }
+
+  /**
+   * Calculate the precise sizes and offsets using the desired weights, the dom container size,
+   * and the size taken up by the dividers
+   *
+   * @param weights
+   * @returns {{sizes: Array, offsets: Array}}
+   */
+  calcSizesAndOffsets(weights) {
+    weights = weights || this.weights;
+    const offsets = [];
+    const sizes = [];
+    for (let i = 0; i < weights.length; i++) {
+      const totalDividerSizeSoFar = i * this.dividerSize;
+      const sizeInPx = this.weightToPx(weights, i);
+      offsets.push(i === 0 ? 0 : (_.sum(sizes) + totalDividerSizeSoFar));
+      sizes.push(Math.max(sizeInPx, this.props.minPanelSize));
+    }
+    return { sizes: sizes, offsets: offsets };
+  }
+
   /**
    * Recalculates the size of each panel according to the weights, taking into
    * account the space used by the dividers then updates this.state.sizes
    * and this.state.offsets.
    */
-  updateSizes(weights, children) {
-    weights = weights || this.weights;
-    weights = this.padOrTruncateWeights(weights, children);
-    const totalWeight = _.sum(weights);
-    // Total space taken by the dividers spread equally across all panels.
-    const dividerCompensation =
-      this.dividerSize * (weights.length - 1) / weights.length;
-    const offsets = [];
-    const sizes = [];
-    for (let i = 0; i < weights.length; i++) {
-      offsets.push(_.sum(sizes) + 2 * dividerCompensation * i);
-      const proportion = weights[i] / totalWeight;
-      sizes.push(Math.max(
-        proportion * this.refs.self[this.domSizeProperty] - dividerCompensation,
-        this.props.minPanelSize
-      ));
-    }
-    this.setState({ sizes: sizes, offsets: offsets });
+  updateSizes(weights) {
+    const sizesAndOffsets = this.calcSizesAndOffsets(weights);
+    this.setState(sizesAndOffsets);
   }
 
-  padOrTruncateWeights(weights, children = this.props.children) {
+  /**
+   * Make up for too few or too many child elements by padding or truncating the weights
+   * Return a new array of weights
+   *
+   * @param originalWeights
+   * @returns {*}
+   */
+  padOrTruncateWeights(originalWeights, children = this.props.children) {
+    const weights = _.clone(originalWeights);
     const numChildren = React.Children.count(children);
     if (weights.length < numChildren) {
-      const min = _.min(weights);
-      while (weights.length < numChildren) {
-        weights.push(min);
-      }
+      const minWeight = this.pxToWeight(weights, this.props.minPanelSize);
       console.warn(`SplitPanel: Only ${weights.length} weights specified ` +
-        `but there are ${numChildren} subpanels; using ${min} for the ` +
+        `but there are ${numChildren} subpanels; using ${minWeight} for the ` +
         `remaining subpanels`);
-    }
-    else if (weights.length > numChildren) {
-      weights = weights.splice(0, numChildren);
+      while (weights.length < numChildren) {
+        weights.push(minWeight);
+      }
+      return weights;
+    } else if (weights.length > numChildren) {
       console.warn(`SplitPanel: ${weights.length} weights specified but ` +
         `there are only ${numChildren} subpanels; ignoring additional weights`);
+      return weights.splice(0, numChildren);
     }
     return weights;
   }
 }
-
