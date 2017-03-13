@@ -222,6 +222,13 @@ var SplitPanel = function (_React$Component) {
     key: "onMouseMove",
     value: function onMouseMove(e) {
       if (this.state.activeDividerIndex == -1) return;
+
+      // The default mousemove action may highlight text inside the panes
+      // If we're not dragging the divider, we don't want to prevent default, b/c we might actually be attempting to highlight text
+      // But if that's the case, we don't get to this point (see above; this function returns if the drag is not on a divider)
+      // If we are dragging the divider, then we want to prevent the highlight event from firing
+      e.preventDefault();
+
       // If moving backwards (left or up) grow the next panel by taking space
       // from the previous one. If moving forwards (right or down) grow the
       // previous panel by taking space from the next.
